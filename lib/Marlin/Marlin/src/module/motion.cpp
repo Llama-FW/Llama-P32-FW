@@ -105,6 +105,15 @@ XYZ_CONSTS(float, max_length,     MAX_LENGTH);
 XYZ_CONSTS(float, home_bump_mm,   HOME_BUMP_MM);
 XYZ_CONSTS(signed char, home_dir, HOME_DIR);
 
+float base_home_pos_fn(Axis axis){
+  switch(axis){
+    case X_AXIS: return X_HOME_DIR < 0 ? X_MIN_POS : X_MAX_POS;
+    case Y_AXIS: return Y_HOME_DIR < 0 ? Y_MIN_POS : Y_MAX_POS;
+    case Z_AXIS: return Z_HOME_DIR < 0 ? Z_MIN_POS : Z_MAX_POS;
+    default: return 0;
+  }
+}
+
 /**
  * axis_homed
  *   Flags that each linear axis was homed.
@@ -1670,14 +1679,14 @@ void set_axis_is_at_home(const AxisEnum axis, [[maybe_unused]] bool homing_z_wit
 
       int8_t active_coordinate_system = GcodeSuite::get_coordinate_system();
       if (active_coordinate_system == -1){ /*If base coordinate system, proceed as usual*/
-        current_position[axis] = base_home_pos(axis);
+        current_position[axis] = base_home_pos_fn(axis);
       } else { /*If in alternate system, update position shift and system offset from base system*/
         position_shift[axis] = - current_position[axis] + workspace_homes[active_coordinate_system][axis];
         GcodeSuite::set_coordinate_system_offset(0, axis, position_shift[axis]);
         update_workspace_offset(axis);        
       }
     #else
-      current_position[axis] = base_home_pos(axis)
+      current_position[axis] = base_home_pos_fn(axis)
         #if ENABLED(PRECISE_HOMING)
           - calibrated_home_offset(axis)
         #endif // ENABLED(PRECISE_HOMING)
